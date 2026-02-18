@@ -164,7 +164,7 @@
           .split("/")
           .map((part) => encodeURIComponent(part))
           .join("/");
-        return `/api/files/${encoded}`;
+        return `/${encoded}`;
       }
 
       function createNode(entry) {        
