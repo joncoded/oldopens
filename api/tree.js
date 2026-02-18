@@ -3,12 +3,14 @@ const path = require("path");
 
 const rootDir = process.cwd();
 
+const SKIP_NAMES = new Set(["__vc", "api", "node_modules"]);
+
 async function buildTree(dir, baseDir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const items = [];
 
   for (const entry of entries) {
-    if (entry.name.startsWith(".")) {
+    if (entry.name.startsWith(".") || SKIP_NAMES.has(entry.name)) {
       continue;
     }
 

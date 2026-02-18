@@ -1,5 +1,19 @@
 {
   "version": 2,
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": [
+        "books/**",
+        "codes/**",
+        "films/**",
+        "looks/**",
+        "songs/**",
+        "words/**",
+        "index.html",
+        "README.md"
+      ]
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }

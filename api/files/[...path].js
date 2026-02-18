@@ -2,6 +2,7 @@ const fs = require("fs").promises;
 const path = require("path");
 
 const rootDir = process.cwd();
+const BLOCKED_PREFIXES = ["__vc", "api", "node_modules"];
 
 function getContentType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -31,6 +32,12 @@ module.exports = async (req, res) => {
       .normalize(relPath)
       .replace(/^\.\.(\/|\\|$)+/, "");
     const absPath = path.join(rootDir, safePath);
+    const firstSegment = safePath.split("/")[0];
+
+    if (BLOCKED_PREFIXES.includes(firstSegment)) {
+      res.status(403).send("Forbidden");
+      return;
+    }
 
     if (!absPath.startsWith(rootDir)) {
       res.status(403).send("Forbidden");
