@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
   try {
     const tree = {
       type: "folder",
-      name: path.basename(rootDir),
+      name: "openouts",
       path: "",
       children: await buildTree(rootDir, rootDir),
     };
