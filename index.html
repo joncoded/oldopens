@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Folder Browser</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f5f2;
+        --panel: #ffffff;
+        --ink: #1b1b1b;
+        --muted: #6b6b6b;
+        --accent: #1f6feb;
+        --border: #e2e2e2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Source Serif 4", "Iowan Old Style", "Palatino", "Times New Roman", serif;
+        background: radial-gradient(circle at top, #fffaf0, #f2efe9 55%, #ece9e1);
+        color: var(--ink);
+      }
+
+      header {
+        padding: 32px 24px 12px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(24px, 3vw, 32px);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .subtitle {
+        margin-top: 6px;
+        color: var(--muted);
+      }
+
+      main {
+        padding: 12px 24px 40px;
+      }
+
+      .panel {
+        max-width: 860px;
+        margin: 0 auto;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 24px 48px -30px rgba(0, 0, 0, 0.25);
+        padding: 20px 22px 28px;
+      }
+
+      .tree {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .tree li {
+        margin: 6px 0;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .node {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 8px;
+      }
+
+      .node:hover {
+        background: #f5f2ec;
+      }
+
+      .node button {
+        border: 0;
+        background: transparent;
+        color: var(--accent);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+
+      .node button:hover {
+        background: #e7f0ff;
+      }
+
+      .name {
+        font-size: 15px;
+      }
+
+      .meta {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .children {
+        margin-left: 18px;
+        border-left: 1px dashed var(--border);
+        padding-left: 12px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 8px 0 0;
+      }
+
+      @media (max-width: 600px) {
+        header,
+        main {
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+
+        .panel {
+          padding: 18px 16px 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Openouts</h1>
+      <div class="subtitle">public domain file and software browser</div>
+    </header>
+    <main>
+      <div class="panel">
+        <ul id="tree" class="tree"></ul>
+        <div id="status" class="status">Loading...</div>
+      </div>
+    </main>
+
+    <script>
+      const treeRoot = document.getElementById("tree");
+      const statusNode = document.getElementById("status");
+
+      function toFileUrl(entryPath) {
+        const encoded = entryPath
+          .split("/")
+          .map((part) => encodeURIComponent(part))
+          .join("/");
+        return `/files/${encoded}`;
+      }
+
+      function createNode(entry) {        
+
+        const li = document.createElement("li");
+        const row = document.createElement("div");          
+        row.className = "node";
+        
+        if (entry.type === "folder") {
+
+          const button = document.createElement("button");
+          button.textContent = "collapse";
+
+          const meta = document.createElement("span");
+          meta.className = "meta";
+          meta.textContent = "folder";
+
+          const childrenList = document.createElement("ul");
+          childrenList.className = "children";
+
+          entry.children.forEach((child) => {
+            childrenList.appendChild(createNode(child));
+          });
+
+          button.addEventListener("click", () => {
+            const isHidden = childrenList.classList.toggle("hidden");
+            button.textContent = isHidden ? "expand" : "collapse";
+          });
+
+          const label = document.createElement("span");
+          label.className = "name";
+          label.textContent = entry.name;
+
+          row.appendChild(label);
+          row.insertBefore(button, label);
+          row.appendChild(meta);
+          li.appendChild(row);
+          li.appendChild(childrenList);
+
+        } else {
+
+          if (entry.name !== "README.md" && entry.name !== "server.js") {
+          
+            const link = document.createElement("a");
+            link.className = "name";
+            link.textContent = entry.name;
+            link.href = toFileUrl(entry.path || entry.name);
+            link.target = "_blank";
+            link.rel = "noopener";
+
+            const meta = document.createElement("span");
+            meta.className = "meta";
+            meta.textContent = "file";
+
+            row.appendChild(link);
+            row.appendChild(meta);
+            li.appendChild(row);
+          
+          } else {
+
+            li.setAttribute("hidden", "true");
+
+          }
+
+        }
+        
+        return li;
+      }
+
+      async function loadTree() {
+        try {
+          const origin = window.location.origin === "null" ? "http://localhost:5173" : window.location.origin;
+          const response = await fetch(`${origin}/api/tree`);
+          if (!response.ok) {
+            throw new Error("Failed to fetch tree");
+          }
+
+          const data = await response.json();        
+          treeRoot.appendChild(createNode(data));
+          statusNode.textContent = "";
+        } catch (error) {
+          statusNode.textContent = "Unable to load directory tree.";
+        }
+      }
+
+      loadTree();
+    </script>
+  </body>
+</html>
