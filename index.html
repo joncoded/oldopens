@@ -21,13 +21,16 @@
 
       body {
         margin: 0;
+        min-height: 100vh;
         font-family: "Source Serif 4", "Iowan Old Style", "Palatino", "Times New Roman", serif;
         background: radial-gradient(circle at top, #fffaf0, #f2efe9 55%, #ece9e1);
         color: var(--ink);
       }
 
-      header {
+      header, footer {
         padding: 32px 24px 12px;
+        max-width: 1280px;
+        margin: 0 auto;
       }
 
       h1 {
@@ -43,11 +46,12 @@
       }
 
       main {
-        padding: 12px 24px 40px;
+        padding: 12px 24px;
       }
 
       .panel {
-        max-width: 860px;
+        max-width: 1280px;
+        width: 100%; 
         margin: 0 auto;
         background: var(--panel);
         border: 1px solid var(--border);
@@ -137,7 +141,7 @@
     </style>
   </head>
   <body>
-    <header>
+    <header>    
       <h1>Openouts</h1>
       <div class="subtitle">public domain file and software browser</div>
     </header>
@@ -147,6 +151,9 @@
         <div id="status" class="status">Loading...</div>
       </div>
     </main>
+    <footer>
+      <p>a <a href="https://joncoded.com" target="_blank">joncoded</a> stuff-gathering project</p>
+    </footer>
 
     <script>
       const treeRoot = document.getElementById("tree");
@@ -157,7 +164,7 @@
           .split("/")
           .map((part) => encodeURIComponent(part))
           .join("/");
-        return `/files/${encoded}`;
+        return `/api/files/${encoded}`;
       }
 
       function createNode(entry) {        
@@ -168,38 +175,42 @@
         
         if (entry.type === "folder") {
 
-          const button = document.createElement("button");
-          button.textContent = "collapse";
+          if (entry.name !== "api") {
+            const button = document.createElement("button");
+            button.textContent = "collapse";
 
-          const meta = document.createElement("span");
-          meta.className = "meta";
-          meta.textContent = "folder";
+            const meta = document.createElement("span");
+            meta.className = "meta";
+            meta.textContent = "folder";
 
-          const childrenList = document.createElement("ul");
-          childrenList.className = "children";
+            const childrenList = document.createElement("ul");
+            childrenList.className = "children";
 
-          entry.children.forEach((child) => {
-            childrenList.appendChild(createNode(child));
-          });
+            entry.children.forEach((child) => {
+              childrenList.appendChild(createNode(child));
+            });
 
-          button.addEventListener("click", () => {
-            const isHidden = childrenList.classList.toggle("hidden");
-            button.textContent = isHidden ? "expand" : "collapse";
-          });
+            button.addEventListener("click", () => {
+              const isHidden = childrenList.classList.toggle("hidden");
+              button.textContent = isHidden ? "expand" : "collapse";
+            });
 
-          const label = document.createElement("span");
-          label.className = "name";
-          label.textContent = entry.name;
+            const label = document.createElement("span");
+            label.className = "name";
+            label.textContent = entry.name;
 
-          row.appendChild(label);
-          row.insertBefore(button, label);
-          row.appendChild(meta);
-          li.appendChild(row);
-          li.appendChild(childrenList);
+            row.appendChild(label);
+            row.insertBefore(button, label);
+            row.appendChild(meta);
+            li.appendChild(row);
+            li.appendChild(childrenList);
+          } else {
+            li.setAttribute("hidden", "true");
+          }
 
         } else {
 
-          if (entry.name !== "README.md" && entry.name !== "server.js") {
+          if (entry.name !== "README.md" && entry.name !== "server.js" && entry.name !== "vercel.json" && entry.name !== "index.html") {
           
             const link = document.createElement("a");
             link.className = "name";
@@ -229,8 +240,7 @@
 
       async function loadTree() {
         try {
-          const origin = window.location.origin === "null" ? "http://localhost:5173" : window.location.origin;
-          const response = await fetch(`${origin}/api/tree`);
+          const response = await fetch("/api/tree");
           if (!response.ok) {
             throw new Error("Failed to fetch tree");
           }
